@@ -1,12 +1,13 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   FlatList,
-  SafeAreaView,
   StatusBar,
+  TextInput,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { THEME } from '../constants/theme';
@@ -27,6 +28,7 @@ export default function ListingScreen({ navigation, route }) {
     initialCategory ? [initialCategory] : []
   );
   const [selectedFoodType, setSelectedFoodType] = useState(null); // 'Veg' | 'Non Veg' | null
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Cart Store
   const quantities = useCartStore((state) => state.quantities);
@@ -37,6 +39,7 @@ export default function ListingScreen({ navigation, route }) {
   // All Items from FoodService
   const allItems = useMemo(() => foodService.getAllItems(), []);
   const repeatItems = useMemo(() => foodService.getRepeatItems(), []);
+  const itemsMap = useMemo(() => foodService.getItemsMap(), []);
 
   // Sync route param change if navigated again
   useEffect(() => {
@@ -47,10 +50,22 @@ export default function ListingScreen({ navigation, route }) {
     }
   }, [initialCategory]);
 
-  // Total cart badge count
+  // Total cart badge count & total amount
   const totalCartCount = useMemo(() => {
     return Object.values(quantities).reduce((acc, q) => acc + q, 0);
   }, [quantities]);
+
+  const totalAmount = useMemo(() => {
+    let sum = 0;
+    for (const [itemId, qty] of Object.entries(quantities)) {
+      if (qty > 0 && itemsMap.has(itemId)) {
+        const item = itemsMap.get(itemId);
+        const price = item.effectivePrice || item.itemOfferRate || item.itemRate || 0;
+        sum += price * qty;
+      }
+    }
+    return sum;
+  }, [quantities, itemsMap]);
 
   // Filter handlers
   const handleToggleCategory = (catId) => {
@@ -67,42 +82,51 @@ export default function ListingScreen({ navigation, route }) {
     setSelectedFoodType((prev) => (prev === type ? null : type));
   };
 
-  // Filtered Main Food List (Pure filter-combination logic)
+  // Filtered Main Food List (Pure filter-combination logic + search)
   const filteredFoodItems = useMemo(() => {
-    return filterFoodItems(allItems, {
+    let list = filterFoodItems(allItems, {
       selectedCategories,
       selectedFoodType,
     });
-  }, [allItems, selectedCategories, selectedFoodType]);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((item) => item.itemName.toLowerCase().includes(q));
+    }
+
+    return list;
+  }, [allItems, selectedCategories, selectedFoodType, searchQuery]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={THEME.colors.surface} />
+    <View style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      {/* 1. Fixed Toolbar at the top at all times (not part of the scroll) */}
+      {/* 1. Fixed Toolbar at top */}
       <Toolbar
-        title="Food & Beverages"
-        subtitle="Audi 2 • INOX Cinema"
+        title="Order Snacks"
+        subtitle="PVR Elan Mercado, Sec 80, Gurugram"
         showBack={true}
         onBack={() => navigation.goBack()}
         cartCount={totalCartCount}
         onCartPress={openCart}
       />
 
-      {/* 2. Below it, a single vertically scrolling body with sticky filter row at index 1 */}
+      {/* 2. Vertically scrolling body with sticky filter row at index 1 */}
       <ScrollView
         style={styles.container}
         stickyHeaderIndices={[1]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Section 1: Horizontal Repeat List */}
-        <View style={styles.repeatSection}>
-          <View style={styles.repeatHeader}>
-            <View style={styles.repeatTitleRow}>
-              <Ionicons name="repeat" size={16} color={THEME.colors.primaryAccent} />
-              <Text style={styles.repeatTitle}>REPEAT AGAIN?</Text>
-            </View>
+        {/* Section 0: REPEAT AGAIN? Carousel & Bank Offers */}
+        <View style={styles.topSection}>
+          {/* Header with decorative lines */}
+          <View style={styles.repeatHeaderContainer}>
+            <View style={styles.headerLine} />
+            <Text style={styles.repeatHeaderTitle}>REPEAT AGAIN?</Text>
+            <View style={styles.headerLine} />
           </View>
+
+          {/* Repeat Items Carousel */}
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -118,9 +142,35 @@ export default function ListingScreen({ navigation, route }) {
             )}
             contentContainerStyle={styles.repeatListContent}
           />
+
+          {/* Bank Offers Strip */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.offersContent}
+            style={styles.offersScrollView}
+          >
+            <View style={styles.offerCard}>
+              <View style={styles.offerIconWrapper}>
+                <Ionicons name="pricetag" size={16} color="#FFFFFF" />
+              </View>
+              <Text style={styles.offerText}>
+                <Text style={styles.offerBold}>IDBI Bank - 25% Off</Text> on Transactions
+              </Text>
+            </View>
+
+            <View style={styles.offerCard}>
+              <View style={styles.offerIconWrapper}>
+                <Ionicons name="pricetag" size={16} color="#FFFFFF" />
+              </View>
+              <Text style={styles.offerText}>
+                <Text style={styles.offerBold}>BOBCARD</Text> up to 20% on F&B
+              </Text>
+            </View>
+          </ScrollView>
         </View>
 
-        {/* Section 2: Sticky Filter Row (Veg/Non-Veg + 5 Categories) */}
+        {/* Section 1: Sticky Filter Row */}
         <View style={styles.stickyFilterContainer}>
           <ScrollView
             horizontal
@@ -137,48 +187,40 @@ export default function ListingScreen({ navigation, route }) {
 
             {/* Non-Veg toggle */}
             <FilterChip
-              label="Non-Veg"
+              label="Non Veg"
               type="non_veg"
               selected={selectedFoodType === FOOD_TYPES.NON_VEG}
               onPress={() => handleToggleFoodType(FOOD_TYPES.NON_VEG)}
             />
 
-            <View style={styles.filterDivider} />
+            {/* Combos Chip with icon */}
+            <FilterChip
+              label="Combos"
+              iconName="restaurant-outline"
+              selected={selectedCategories.includes('COMBOS')}
+              onPress={() => handleToggleCategory('COMBOS')}
+            />
 
-            {/* 5 Category Chips */}
-            {CATEGORIES.map((cat) => {
-              const isSelected = selectedCategories.includes(cat.id);
-              return (
-                <FilterChip
-                  key={cat.id}
-                  label={cat.label}
-                  selected={isSelected}
-                  onPress={() => handleToggleCategory(cat.id)}
-                />
-              );
-            })}
+            {/* Remaining Category Chips */}
+            {CATEGORIES.filter((c) => c.id !== 'COMBOS').map((cat) => (
+              <FilterChip
+                key={cat.id}
+                label={cat.label}
+                selected={selectedCategories.includes(cat.id)}
+                onPress={() => handleToggleCategory(cat.id)}
+              />
+            ))}
           </ScrollView>
         </View>
 
-        {/* Section 3: Vertical Main Food List */}
+        {/* Section 2: Main Food List */}
         <View style={styles.mainListSection}>
-          <View style={styles.mainListHeader}>
-            <Text style={styles.mainListTitle}>
-              {selectedCategories.length === 1
-                ? selectedCategories[0]
-                : 'ALL ITEMS'}
-            </Text>
-            <Text style={styles.itemCountText}>
-              {filteredFoodItems.length} {filteredFoodItems.length === 1 ? 'item' : 'items'}
-            </Text>
-          </View>
-
           {filteredFoodItems.length === 0 ? (
             <View style={styles.noResultsContainer}>
               <Ionicons name="search-outline" size={44} color={THEME.colors.textMuted} />
               <Text style={styles.noResultsTitle}>No items found</Text>
               <Text style={styles.noResultsSubtitle}>
-                Try adjusting your category or dietary filter combination.
+                Try adjusting your category or dietary filters.
               </Text>
             </View>
           ) : (
@@ -194,9 +236,73 @@ export default function ListingScreen({ navigation, route }) {
           )}
         </View>
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 160 }} />
       </ScrollView>
-    </SafeAreaView>
+
+      {/* 3. Floating Bottom Section (Search Bar + Menu Button + Cart Bar) */}
+      <View style={styles.floatingBottomContainer}>
+        {/* Search Bar & Menu Button */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchBarWrapper}>
+            <Ionicons name="search-outline" size={20} color="#777777" style={styles.searchIcon} />
+            <TextInput
+              placeholder='Search "Burger"'
+              placeholderTextColor="#888888"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={styles.searchInput}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={18} color="#999999" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => setSelectedCategories([])}
+            style={styles.menuButton}
+          >
+            <Ionicons name="restaurant" size={16} color="#111111" />
+            <Text style={styles.menuButtonText}>Menu</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Floating Cart Strip (when items > 0) */}
+        {totalCartCount > 0 && (
+          <View style={styles.cartBottomGroup}>
+            {/* Top cream bar */}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={openCart}
+              style={styles.cartSummaryBar}
+            >
+              <View style={styles.cartLeft}>
+                <Ionicons name="cart" size={19} color="#D32F2F" />
+                <Text style={styles.cartCountText}>
+                  {totalCartCount} {totalCartCount === 1 ? 'item' : 'items'}
+                </Text>
+                <Ionicons name="caret-up" size={13} color="#111111" />
+              </View>
+
+              <Text style={styles.cartTotalText}>
+                ₹{totalAmount.toFixed(2)}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Bottom big Proceed button */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={openCart}
+              style={styles.proceedButton}
+            >
+              <Text style={styles.proceedButtonText}>Proceed</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -209,73 +315,91 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.background,
   },
-  repeatSection: {
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.md,
-    backgroundColor: THEME.colors.background,
+  topSection: {
+    backgroundColor: '#FFFDF5',
+    paddingTop: 14,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0ECE0',
   },
-  repeatHeader: {
-    paddingHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.sm,
-  },
-  repeatTitleRow: {
+  repeatHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 14,
   },
-  repeatTitle: {
-    fontSize: 12,
+  headerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E8DDB8',
+  },
+  repeatHeaderTitle: {
+    fontSize: 13,
     fontWeight: '800',
-    color: THEME.colors.textPrimary,
-    letterSpacing: 0.8,
+    color: '#111111',
+    letterSpacing: 1.2,
+    marginHorizontal: 12,
   },
   repeatListContent: {
-    paddingHorizontal: THEME.spacing.lg,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
   },
-  stickyFilterContainer: {
-    backgroundColor: THEME.colors.surface,
+  offersScrollView: {
+    marginTop: 14,
+  },
+  offersContent: {
+    paddingHorizontal: 16,
+  },
+  offerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ECECE6',
     paddingVertical: 10,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: THEME.colors.border,
-    shadowColor: THEME.colors.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  filterRowContent: {
-    paddingHorizontal: THEME.spacing.lg,
-    alignItems: 'center',
-  },
-  filterDivider: {
-    width: 1,
-    height: 22,
-    backgroundColor: THEME.colors.border,
-    marginRight: THEME.spacing.sm,
-  },
-  mainListSection: {
-    backgroundColor: THEME.colors.surface,
-    minHeight: 400,
-  },
-  mainListHeader: {
+    paddingHorizontal: 12,
+    marginRight: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.lg,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.xs,
+    width: 220,
   },
-  mainListTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: THEME.colors.textPrimary,
-    letterSpacing: 0.8,
+  offerIconWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFB800',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
-  itemCountText: {
+  offerText: {
     fontSize: 12,
-    color: THEME.colors.textSecondary,
-    fontWeight: '500',
+    color: '#333333',
+    lineHeight: 16,
+    flex: 1,
+  },
+  offerBold: {
+    fontWeight: '700',
+    color: '#111111',
+  },
+  stickyFilterContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#E8E8E2',
+    elevation: 2,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  filterRowContent: {
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  mainListSection: {
+    backgroundColor: '#FFFFFF',
   },
   noResultsContainer: {
     paddingVertical: 60,
@@ -286,14 +410,112 @@ const styles = StyleSheet.create({
   noResultsTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    color: '#111111',
     marginTop: 10,
   },
   noResultsSubtitle: {
     fontSize: 13,
-    color: THEME.colors.textSecondary,
+    color: '#666666',
     textAlign: 'center',
     marginTop: 4,
-    lineHeight: 18,
+  },
+  floatingBottomContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 14,
+    paddingBottom: 10,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  searchBarWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 46,
+    borderWidth: 1,
+    borderColor: '#EAEAE2',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111111',
+    fontWeight: '500',
+    paddingVertical: 0,
+  },
+  menuButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EBEBE6',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 46,
+    marginLeft: 10,
+    gap: 6,
+  },
+  menuButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111111',
+  },
+  cartBottomGroup: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  cartSummaryBar: {
+    backgroundColor: THEME.colors.cartBarBackground,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: '#E8DCB8',
+  },
+  cartLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cartCountText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111111',
+  },
+  cartTotalText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111111',
+  },
+  proceedButton: {
+    backgroundColor: THEME.colors.primaryAccent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  proceedButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111111',
+    letterSpacing: 0.2,
   },
 });

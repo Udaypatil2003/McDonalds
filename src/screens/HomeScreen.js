@@ -6,7 +6,6 @@ import {
   ScrollView,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,11 +26,24 @@ export default function HomeScreen({ navigation }) {
   // Data from service
   const popularItems = useMemo(() => foodService.getPopularItems(), []);
   const repeatItems = useMemo(() => foodService.getRepeatItems(), []);
+  const itemsMap = useMemo(() => foodService.getItemsMap(), []);
 
-  // Total cart count
+  // Total cart count & amount
   const totalCartCount = useMemo(() => {
     return Object.values(quantities).reduce((acc, q) => acc + q, 0);
   }, [quantities]);
+
+  const totalAmount = useMemo(() => {
+    let sum = 0;
+    for (const [itemId, qty] of Object.entries(quantities)) {
+      if (qty > 0 && itemsMap.has(itemId)) {
+        const item = itemsMap.get(itemId);
+        const price = item.effectivePrice || item.itemOfferRate || item.itemRate || 0;
+        sum += price * qty;
+      }
+    }
+    return sum;
+  }, [quantities, itemsMap]);
 
   const handleCategoryPress = (categoryId) => {
     navigation.navigate('Listing', { initialCategory: categoryId });
@@ -42,13 +54,13 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={THEME.colors.surface} />
+    <View style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
       {/* Fixed Toolbar */}
       <Toolbar
-        title="INOX F&B Ordering"
-        subtitle="Audi 2 • Screen 1"
+        title="Order Snacks"
+        subtitle="PVR Elan Mercado, Sec 80, Gurugram"
         showBack={false}
         cartCount={totalCartCount}
         onCartPress={openCart}
@@ -59,10 +71,10 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Cinema Banner Section */}
+        {/* Top Hero Banner */}
         <View style={styles.heroBanner}>
           <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>CINEMA EXCLUSIVE</Text>
+            <Text style={styles.heroBadgeText}>PVR INOX EXCLUSIVE</Text>
           </View>
           <Text style={styles.heroTitle}>Delivered Right To Your Seat</Text>
           <Text style={styles.heroSubtitle}>
@@ -75,11 +87,11 @@ export default function HomeScreen({ navigation }) {
             style={styles.orderNowButton}
           >
             <Text style={styles.orderNowText}>Order Now / View Full Menu</Text>
-            <Ionicons name="arrow-forward" size={16} color="#3B2F00" />
+            <Ionicons name="arrow-forward" size={16} color="#111111" />
           </TouchableOpacity>
         </View>
 
-        {/* Category Tiles Section */}
+        {/* Categories Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>EXPLORE CATEGORIES</Text>
@@ -99,14 +111,40 @@ export default function HomeScreen({ navigation }) {
           </ScrollView>
         </View>
 
-        {/* Horizontal Repeat Order List */}
+        {/* Bank Offers Strip */}
+        <View style={styles.section}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.offersContent}
+          >
+            <View style={styles.offerCard}>
+              <View style={styles.offerIconWrapper}>
+                <Ionicons name="pricetag" size={16} color="#FFFFFF" />
+              </View>
+              <Text style={styles.offerText}>
+                <Text style={styles.offerBold}>IDBI Bank - 25% Off</Text> on Transactions
+              </Text>
+            </View>
+
+            <View style={styles.offerCard}>
+              <View style={styles.offerIconWrapper}>
+                <Ionicons name="pricetag" size={16} color="#FFFFFF" />
+              </View>
+              <Text style={styles.offerText}>
+                <Text style={styles.offerBold}>BOBCARD</Text> up to 20% on F&B
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
+
+        {/* Repeat Again Carousel */}
         {repeatItems.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.titleRow}>
-                <Ionicons name="repeat" size={18} color={THEME.colors.primaryAccent} />
-                <Text style={styles.sectionTitle}>REPEAT AGAIN?</Text>
-              </View>
+            <View style={styles.repeatHeaderContainer}>
+              <View style={styles.headerLine} />
+              <Text style={styles.repeatHeaderTitle}>REPEAT AGAIN?</Text>
+              <View style={styles.headerLine} />
             </View>
             <FlatList
               horizontal
@@ -126,7 +164,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        {/* Horizontal Popular Items List */}
+        {/* Popular Items Carousel */}
         {popularItems.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -153,9 +191,42 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        <View style={{ height: 32 }} />
+        <View style={{ height: totalCartCount > 0 ? 120 : 40 }} />
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Floating Bottom Cart Bar */}
+      {totalCartCount > 0 && (
+        <View style={styles.floatingBottomContainer}>
+          <View style={styles.cartBottomGroup}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={openCart}
+              style={styles.cartSummaryBar}
+            >
+              <View style={styles.cartLeft}>
+                <Ionicons name="cart" size={19} color="#D32F2F" />
+                <Text style={styles.cartCountText}>
+                  {totalCartCount} {totalCartCount === 1 ? 'item' : 'items'}
+                </Text>
+                <Ionicons name="caret-up" size={13} color="#111111" />
+              </View>
+
+              <Text style={styles.cartTotalText}>
+                ₹{totalAmount.toFixed(2)}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={openCart}
+              style={styles.proceedButton}
+            >
+              <Text style={styles.proceedButtonText}>Proceed</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -173,10 +244,10 @@ const styles = StyleSheet.create({
   },
   heroBanner: {
     backgroundColor: THEME.colors.cartBarBackground,
-    marginHorizontal: THEME.spacing.lg,
-    marginTop: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.xl,
-    padding: THEME.spacing.lg,
+    marginHorizontal: 16,
+    marginTop: 14,
+    borderRadius: 16,
+    padding: 18,
     borderWidth: 1,
     borderColor: '#F0E2BA',
   },
@@ -191,7 +262,7 @@ const styles = StyleSheet.create({
   heroBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#3D2F00',
+    color: '#111111',
     letterSpacing: 0.5,
   },
   heroTitle: {
@@ -211,27 +282,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.colors.ctaGold,
+    backgroundColor: THEME.colors.primaryAccent,
     paddingVertical: 12,
-    borderRadius: THEME.borderRadius.md,
+    borderRadius: 8,
     gap: 8,
-    shadowColor: THEME.colors.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
   },
   orderNowText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#3B2F00',
+    color: '#111111',
   },
   section: {
-    marginTop: THEME.spacing.xl,
+    marginTop: 18,
   },
   sectionHeader: {
-    paddingHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
+    paddingHorizontal: 16,
+    marginBottom: 12,
   },
   titleRow: {
     flexDirection: 'row',
@@ -244,10 +310,120 @@ const styles = StyleSheet.create({
     color: THEME.colors.textPrimary,
     letterSpacing: 1,
   },
+  repeatHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 14,
+  },
+  headerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E8DDB8',
+  },
+  repeatHeaderTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#111111',
+    letterSpacing: 1.2,
+    marginHorizontal: 12,
+  },
   categoryRowContent: {
-    paddingHorizontal: THEME.spacing.lg,
+    paddingHorizontal: 16,
   },
   carouselContent: {
-    paddingHorizontal: THEME.spacing.lg,
+    paddingHorizontal: 16,
+  },
+  offersContent: {
+    paddingHorizontal: 16,
+  },
+  offerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ECECE6',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginRight: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 220,
+  },
+  offerIconWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFB800',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  offerText: {
+    fontSize: 12,
+    color: '#333333',
+    lineHeight: 16,
+    flex: 1,
+  },
+  offerBold: {
+    fontWeight: '700',
+    color: '#111111',
+  },
+  floatingBottomContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 14,
+    paddingBottom: 10,
+  },
+  cartBottomGroup: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  cartSummaryBar: {
+    backgroundColor: THEME.colors.cartBarBackground,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: '#E8DCB8',
+  },
+  cartLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cartCountText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111111',
+  },
+  cartTotalText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111111',
+  },
+  proceedButton: {
+    backgroundColor: THEME.colors.primaryAccent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  proceedButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111111',
+    letterSpacing: 0.2,
   },
 });

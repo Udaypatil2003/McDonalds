@@ -1,81 +1,89 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { THEME } from '../constants/theme';
 
 export default function Toolbar({
-  title = 'Cinema F&B',
-  subtitle,
+  title = 'Order Snacks',
+  subtitle = 'PVR Elan Mercado, Sec 80, Gurugram',
   showBack = false,
   onBack,
   cartCount = 0,
   onCartPress,
 }) {
+  const insets = useSafeAreaInsets();
+  const androidBarHeight = StatusBar.currentHeight || 0;
+  // Ensure we have sufficient padding so status bar / notifications never overlap
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? Math.max(androidBarHeight, 24) : 0
+  );
+
   return (
-    <View style={styles.container}>
-      <View style={styles.leftSection}>
-        {showBack ? (
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onBack}
-            style={styles.backButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="arrow-back" size={24} color={THEME.colors.textPrimary} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.brandIcon}>
-            <Ionicons name="film-outline" size={20} color="#6A5300" />
-          </View>
-        )}
+    <View style={[styles.outerContainer, { paddingTop: topInset }]}>
+      <View style={styles.container}>
+        <View style={styles.leftSection}>
+          {showBack && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={onBack}
+              style={styles.backButton}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#111111" />
+            </TouchableOpacity>
+          )}
 
-        <View style={styles.titleContainer}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {subtitle}
+          <View style={styles.titleContainer}>
+            <Text style={styles.title} numberOfLines={1}>
+              {title}
             </Text>
-          ) : null}
+            {subtitle ? (
+              <View style={styles.subtitleRow}>
+                <Ionicons name="location-sharp" size={13} color="#111111" style={styles.pinIcon} />
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  {subtitle}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
-      </View>
 
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={onCartPress}
-        style={styles.cartButton}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons name="cart-outline" size={24} color={THEME.colors.textPrimary} />
-        {cartCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {cartCount > 99 ? '99+' : cartCount}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={onCartPress}
+          style={styles.cartButton}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="cart-outline" size={24} color="#111111" />
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {cartCount > 99 ? '99+' : cartCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    backgroundColor: THEME.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ECECE6',
+    zIndex: 100,
+  },
   container: {
-    height: 60,
+    height: 56,
     backgroundColor: THEME.colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
-    shadowColor: THEME.colors.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 3,
-    zIndex: 100,
+    paddingHorizontal: 16,
   },
   leftSection: {
     flexDirection: 'row',
@@ -83,54 +91,54 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backButton: {
-    marginRight: THEME.spacing.md,
-    padding: 4,
-  },
-  brandIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: THEME.colors.cartBarBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: THEME.spacing.md,
+    marginRight: 8,
+    padding: 2,
+    marginLeft: -4,
   },
   titleContainer: {
     flex: 1,
     justifyContent: 'center',
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111111',
     letterSpacing: -0.2,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  pinIcon: {
+    marginRight: 4,
   },
   subtitle: {
     fontSize: 12,
-    color: THEME.colors.textSecondary,
-    marginTop: 1,
+    color: '#444444',
+    fontWeight: '500',
   },
   cartButton: {
     padding: 6,
     position: 'relative',
-    marginLeft: THEME.spacing.md,
+    marginLeft: 12,
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -4,
-    backgroundColor: THEME.colors.ctaGold,
+    top: 0,
+    right: -2,
+    backgroundColor: THEME.colors.primaryAccent,
     borderRadius: 10,
-    minWidth: 19,
-    height: 19,
+    minWidth: 18,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderWidth: 1.5,
-    borderColor: THEME.colors.surface,
+    borderColor: '#FFFFFF',
   },
   badgeText: {
-    color: '#3B2F00',
+    color: '#000000',
     fontSize: 10,
     fontWeight: '800',
   },

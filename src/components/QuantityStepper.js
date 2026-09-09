@@ -23,7 +23,7 @@ export default function QuantityStepper({
         ]}
       >
         <Text style={[styles.addButtonText, isSmall && styles.addButtonTextSmall]}>
-          ADD
+          Add
         </Text>
       </TouchableOpacity>
     );
@@ -68,83 +68,71 @@ export default function QuantityStepper({
 
 const styles = StyleSheet.create({
   addButton: {
-    backgroundColor: THEME.colors.goldLight,
-    borderColor: THEME.colors.primaryAccent,
-    borderWidth: 1.5,
-    borderRadius: THEME.borderRadius.md,
+    backgroundColor: THEME.colors.addBtnBg,
+    borderColor: THEME.colors.addBtnBorder,
+    borderWidth: 1,
+    borderRadius: 8,
     paddingVertical: 6,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.colors.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
+    minWidth: 74,
   },
   addButtonSmall: {
     paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: THEME.borderRadius.sm,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    minWidth: 64,
   },
   addButtonText: {
-    color: '#3D2F00',
+    color: '#111111',
     fontSize: 13,
     fontWeight: '700',
-    letterSpacing: 0.5,
   },
   addButtonTextSmall: {
-    fontSize: 11,
+    fontSize: 12,
   },
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: THEME.colors.stepperYellow,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     minWidth: 92,
-    shadowColor: THEME.colors.shadowColor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 1,
   },
   stepperContainerSmall: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    minWidth: 78,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    minWidth: 80,
   },
   stepperButton: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperButtonSmall: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   stepperButtonText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    fontWeight: '800',
+    color: '#000000',
     lineHeight: 20,
   },
   stepperButtonTextSmall: {
-    fontSize: 14,
-    lineHeight: 16,
+    fontSize: 15,
+    lineHeight: 18,
   },
   quantityText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    fontWeight: '800',
+    color: '#000000',
     minWidth: 20,
     textAlign: 'center',
   },
   quantityTextSmall: {
-    fontSize: 12,
+    fontSize: 13,
   },
 });

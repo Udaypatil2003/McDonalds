@@ -10,6 +10,7 @@ import {
   Animated,
   Dimensions,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { THEME } from '../../constants/theme';
@@ -155,16 +156,16 @@ export default function CartBottomSheet() {
             />
           )}
 
-          {/* Bottom Total Summary Strip (No Proceed button as per user instruction) */}
+          {/* Bottom Total Summary Strip & Proceed Button */}
           {cartItems.length > 0 && (
             <View style={styles.totalBarContainer}>
               <View style={styles.totalBarStrip}>
                 <View style={styles.totalLeft}>
-                  <Ionicons name="cart" size={18} color="#4A3B00" />
+                  <Ionicons name="cart" size={18} color="#D32F2F" />
                   <Text style={styles.totalCountText}>
                     {totalCount} {totalCount === 1 ? 'item' : 'items'}
                   </Text>
-                  <Ionicons name="caret-down" size={12} color="#4A3B00" />
+                  <Ionicons name="caret-down" size={12} color="#111111" />
                 </View>
 
                 <View style={styles.totalRight}>
@@ -173,6 +174,17 @@ export default function CartBottomSheet() {
                   </Text>
                 </View>
               </View>
+
+              {/* Proceed CTA */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  closeCart();
+                }}
+                style={styles.cartProceedButton}
+              >
+                <Text style={styles.cartProceedButtonText}>Proceed</Text>
+              </TouchableOpacity>
             </View>
           )}
         </Animated.View>
@@ -192,11 +204,11 @@ const styles = StyleSheet.create({
   },
   sheetContainer: {
     backgroundColor: THEME.colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.82,
     minHeight: SCREEN_HEIGHT * 0.45,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 20,
     shadowColor: THEME.colors.shadowColor,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.12,
@@ -217,10 +229,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.sm,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.divider,
+    borderBottomColor: '#F0F0EA',
   },
   headerTitle: {
     fontSize: 20,
@@ -235,8 +247,8 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   listContent: {
-    paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
   },
   emptyContainer: {
     paddingVertical: 40,
@@ -258,8 +270,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   totalBarContainer: {
-    paddingHorizontal: THEME.spacing.lg,
-    paddingTop: THEME.spacing.md,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     backgroundColor: THEME.colors.surface,
   },
   totalBarStrip: {
@@ -269,9 +281,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: THEME.borderRadius.md,
-    borderWidth: 1,
-    borderColor: '#F0E2BA',
+    borderRadius: 8,
+    marginBottom: 10,
   },
   totalLeft: {
     flexDirection: 'row',
@@ -281,14 +292,26 @@ const styles = StyleSheet.create({
   totalCountText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#3B2F00',
+    color: '#111111',
   },
   totalRight: {
     alignItems: 'flex-end',
   },
   totalAmountText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#3B2F00',
+    color: '#111111',
+  },
+  cartProceedButton: {
+    backgroundColor: THEME.colors.primaryAccent,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+  },
+  cartProceedButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111111',
   },
 });
