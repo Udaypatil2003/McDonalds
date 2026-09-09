@@ -22,6 +22,12 @@ npm start
 # or
 npx expo start
 ```
+
+## Notes & Assumptions
+- No payment/checkout flow — not part of the provided assignment spec or JSON schema.
+- A few additional items were flagged as `isPopuplarItem`/`isRepeat` in `fnb.json` to populate the Home carousels, since the original file had very few marked.
+
+
 ## Architecture & Key Design Decisions
 
 ### 1. Single Shared Cart Store (Zustand)
