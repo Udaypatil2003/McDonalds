@@ -2,7 +2,7 @@ export const THEME = {
   colors: {
     background: '#F9F9F6',
     surface: '#FFFFFF',
-    primaryAccent: '#FFC700', // Bright cinema yellow for steppers & buttons
+    primaryAccent: '#FFC700', 
     ctaGold: '#FFC107',
     stepperYellow: '#FFC700',
     addBtnBg: '#FFF9D9',
